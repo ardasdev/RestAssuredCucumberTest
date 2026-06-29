@@ -1,7 +1,9 @@
 package hotelreservation.steps;
 
+import hotelreservation.models.Booking;
 import hotelreservation.models.BookingResponse;
 import hotelreservation.services.ReservationService;
+import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -12,6 +14,9 @@ public class ReservationSteps {
     ReservationService reservationService;
     String authkey;
     BookingResponse bookingResponse;
+    Booking updatedBooking;
+    Booking partialUpdatedBooking;
+
 
     @Given("Kullanici yeni bir rezervasyon olusturuyor")
     public void kullanici_yeni_bir_rezervasyon_olusturuyor() {
@@ -41,15 +46,44 @@ public class ReservationSteps {
         Assertions.assertFalse(bookingResponse.getBooking().isDepositpaid());
         Assertions.assertEquals("Sigara içilen oda", bookingResponse.getBooking().getAdditionalneeds());
 
-
     }
 
     @Then("Kullanici olustulan rezervasyonu iptal ediyor")
     public void kullanici_olustulan_rezervasyonu_iptal_ediyor() {
 
-
         reservationService.deleteReservation(authkey,bookingResponse.getBookingid());
 
+    }
+
+    @Then("Rezervasyon basarili sekilde silindi")
+    public void rezervasyon_basarili_sekilde_silindi() {
+        reservationService.assertBookingNotFound(bookingResponse.getBookingid());
+    }
+
+    @And("Kullanici olusturulan rezervasyonu güncelliyor")
+    public void kullanici_olusturulan_rezervasyonu_güncelliyor() {
+
+        updatedBooking = reservationService.updateBooking(authkey,bookingResponse.getBookingid());
 
     }
+
+    @Then("Rezervasyon basarili sekilde guncellendi")
+    public void rezervasyon_basarili_sekilde_guncellendi() {
+        Assertions.assertEquals(2000, updatedBooking.getTotalprice());
+        Assertions.assertTrue(updatedBooking.isDepositpaid());
+        Assertions.assertEquals("Deniz manzarası", updatedBooking.getAdditionalneeds());
+    }
+
+    @And("Kullanici rezervasyonu kismi olarak guncelliyor")
+    public void kullanici_rezervasyonu_kismi_olarak_guncelliyor() {
+        partialUpdatedBooking = reservationService.partialUpdate(authkey, bookingResponse.getBookingid());
+    }
+
+    @Then("Sadece guncellenen alanlar degismis olmali")
+    public void sadece_guncellenen_alanlar_degismis_olmali() {
+        Assertions.assertEquals("Mehmet", partialUpdatedBooking.getFirstname());
+        Assertions.assertEquals(500, partialUpdatedBooking.getTotalprice());
+        Assertions.assertEquals("Özel", partialUpdatedBooking.getLastname());
+    }
+
 }
